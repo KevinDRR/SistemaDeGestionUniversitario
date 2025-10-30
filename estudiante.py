@@ -1,14 +1,17 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException
-from models import Estudiante, EstudianteCreate, EstudianteUpdate
+from models import Estudiante, EstudianteCreate, EstudianteUpdate, Matricula, Curso
 from db import SessionDep
 from sqlmodel import select
 
 router = APIRouter()
 
 @router.get("/", response_model=List[Estudiante])
-async def get_all_estudiantes(session: SessionDep):
-    estudiantes = session.exec(select(Estudiante)).all()
+async def get_all_estudiantes(session: SessionDep, semestre: Optional[int] = None):
+    stmt = select(Estudiante)
+    if semestre is not None:
+        stmt = stmt.where(Estudiante.semestre == semestre)
+    estudiantes = session.exec(stmt).all()
     return estudiantes
 
 @router.delete("/{cedula}")
@@ -29,12 +32,21 @@ async def create_estudiante(new_estudiante: EstudianteCreate, session: SessionDe
     session.refresh(estudiante)
     return estudiante
 
-@router.get("/{estudiante_id}", response_model=Estudiante)
+@router.get("/{estudiante_id}")
 async def get_one_estudiante(estudiante_id: int, session: SessionDep):
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
-    return estudiante_db
+    stmt = select(Matricula).where(Matricula.estudiante_cedula == estudiante_id)
+    matriculas = session.exec(stmt).all()
+    cursos = []
+    for m in matriculas:
+        c = session.get(Curso, m.curso_id)
+        if c:
+            cursos.append(c)
+    estudiante_dict = estudiante_db.model_dump()
+    estudiante_dict["cursos"] = [c.model_dump() for c in cursos]
+    return estudiante_dict
 
 @router.put("/{estudiante_id}", response_model=Estudiante)
 async def update_estudiante(estudiante_id: int, estudiante_update: EstudianteUpdate, session: SessionDep):
