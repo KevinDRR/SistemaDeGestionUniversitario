@@ -8,17 +8,29 @@ Content-Type: application/json
 	"Horario": "2025-10-30"
 }
 
+{
+	"nombre": "Infraestructura de TI",
+	"Creditos": 3,
+	"Horario": "2025-09-24"
+}
+
 # Crear Estudiante
 POST http://127.0.0.1:8000/estudiantes
 Content-Type: application/json
 
 {
-	"cedula": 1234567890,
+	"cedula": 1,
 	"nombre": "Kevin Rodríguez",
 	"email": "kevin@universidad.edu",
 	"semestre": 6
 }
 
+{
+	"cedula": 2,
+	"nombre": "Sigmotoa",
+	"email": "Sigmotoa@universidad.edu",
+	"semestre": 10
+}
 
 # Otros comandos 
 ## Activar entorno virtual

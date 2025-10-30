@@ -1,9 +1,24 @@
+from typing import List
 from fastapi import APIRouter, HTTPException
 from models import Curso, CursoCreate, CursoUpdate, Estudiante, EstudianteCreate, Matricula
 from db import SessionDep
 from sqlmodel import select
 
 router = APIRouter()
+
+@router.get("/", response_model=List[Curso])
+async def get_all_cursos(session: SessionDep):
+    cursos = session.exec(select(Curso)).all()
+    return cursos
+
+@router.delete("/{curso_id}")
+async def delete_curso(curso_id: int, session: SessionDep):
+    curso = session.get(Curso, curso_id)
+    if not curso:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+    session.delete(curso)
+    session.commit()
+    return {"message": "Curso eliminado"}
 
 @router.post("/", response_model=Curso)
 async def create_curso(new_curso: CursoCreate, session: SessionDep):
