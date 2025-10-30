@@ -1,0 +1,29 @@
+# Crear Curso
+POST http://127.0.0.1:8000/cursos
+Content-Type: application/json
+
+{
+	"nombre": "Desarrollo de Software",
+	"Creditos": 4,
+	"Horario": "2025-10-30"
+}
+
+# Crear Estudiante
+POST http://127.0.0.1:8000/estudiantes
+Content-Type: application/json
+
+{
+	"cedula": 1234567890,
+	"nombre": "Kevin Rodríguez",
+	"email": "kevin@universidad.edu",
+	"semestre": 6
+}
+
+
+# Otros comandos 
+## Activar entorno virtual
+.venv\Scripts\Activate
+
+## Ejecutar la app con Uvicorn
+uvicorn main:app --reload
+
