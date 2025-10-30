@@ -1,41 +1,46 @@
-# Crear Curso
+### Crear primer curso
 POST http://127.0.0.1:8000/cursos
 Content-Type: application/json
 
 {
-	"nombre": "Desarrollo de Software",
-	"Creditos": 4,
-	"Horario": "2025-10-30"
+    "nombre": "Desarrollo de Software",
+    "Creditos": 4,
+    "Horario": "2025-10-30"
 }
+
+### Crear segundo curso
+POST http://127.0.0.1:8000/cursos
+Content-Type: application/json
 
 {
-	"nombre": "Infraestructura de TI",
-	"Creditos": 3,
-	"Horario": "2025-09-24"
+    "nombre": "Infraestructura de TI",
+    "Creditos": 3,
+    "Horario": "2025-09-24"
 }
 
-# Crear Estudiante
+### Crear primer estudiante
 POST http://127.0.0.1:8000/estudiantes
 Content-Type: application/json
 
 {
-	"cedula": 1,
-	"nombre": "Kevin Rodríguez",
-	"email": "kevin@universidad.edu",
-	"semestre": 6
+    "cedula": 1,
+    "nombre": "Kevin Rodríguez",
+    "email": "kevin@universidad.edu",
+    "semestre": 6
 }
+
+### Crear segundo estudiante
+POST http://127.0.0.1:8000/estudiantes
+Content-Type: application/json
 
 {
-	"cedula": 2,
-	"nombre": "Sigmotoa",
-	"email": "Sigmotoa@universidad.edu",
-	"semestre": 10
+    "cedula": 2,
+    "nombre": "Sigmotoa",
+    "email": "Sigmotoa@universidad.edu",
+    "semestre": 10
 }
 
-# Otros comandos 
-## Activar entorno virtual
+### Otros comandos 
+python -m venv .venv
 .venv\Scripts\Activate
-
-## Ejecutar la app con Uvicorn
 uvicorn main:app --reload
-
