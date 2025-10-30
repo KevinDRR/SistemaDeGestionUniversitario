@@ -7,10 +7,16 @@ from sqlmodel import select
 router = APIRouter()
 
 @router.get("/", response_model=List[Estudiante])
-async def get_all_estudiantes(session: SessionDep, semestre: Optional[int] = None):
+async def get_all_estudiantes(
+    session: SessionDep, 
+    semestre: Optional[int] = None,
+    incluir_archivados: bool = False
+):
     stmt = select(Estudiante)
     if semestre is not None:
         stmt = stmt.where(Estudiante.semestre == semestre)
+    if not incluir_archivados:
+        stmt = stmt.where(Estudiante.archivado == False)
     estudiantes = session.exec(stmt).all()
     return estudiantes
 
@@ -19,9 +25,10 @@ async def delete_estudiante(cedula: int, session: SessionDep):
     estudiante = session.get(Estudiante, cedula)
     if not estudiante:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
-    session.delete(estudiante)
+    estudiante.archivado = True  
+    session.add(estudiante)
     session.commit()
-    return {"message": "Estudiante eliminado"}
+    return {"message": "Estudiante archivado"}
 
 @router.post("/", response_model=Estudiante)
 async def create_estudiante(new_estudiante: EstudianteCreate, session: SessionDep):
@@ -33,10 +40,16 @@ async def create_estudiante(new_estudiante: EstudianteCreate, session: SessionDe
     return estudiante
 
 @router.get("/{estudiante_id}")
-async def get_one_estudiante(estudiante_id: int, session: SessionDep):
+async def get_one_estudiante(
+    estudiante_id: int, 
+    session: SessionDep,
+    incluir_archivados: bool = False
+):
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+    if estudiante_db.archivado and not incluir_archivados:
+        raise HTTPException(status_code=404, detail="Estudiante archivado")
     stmt = select(Matricula).where(Matricula.estudiante_cedula == estudiante_id)
     matriculas = session.exec(stmt).all()
     cursos = []

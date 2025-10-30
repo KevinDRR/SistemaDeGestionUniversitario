@@ -9,13 +9,13 @@ class CursoBase(SQLModel):
 
 class EstudianteBase(SQLModel):
     cedula: int | None = Field(default=None, primary_key=True)
-    nombre: str | None = Field(description= "nombre del estudiante")
-    email: str | None = Field(description= "email del estudiante")
-    semestre: int | None = Field(description= "semestre del estudiante")
+    nombre: str | None = Field(description="nombre del estudiante")
+    email: str | None = Field(description="email del estudiante")
+    semestre: int | None = Field(description="semestre del estudiante")
 
 
 class Estudiante(EstudianteBase, table=True):
-    cedula: int | None = Field(default=None, primary_key=True)
+    archivado: bool = Field(default=False, description="indica si el estudiante está archivado")
 
 class Curso(CursoBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
