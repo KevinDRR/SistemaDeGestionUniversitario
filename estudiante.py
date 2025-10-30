@@ -67,9 +67,9 @@ async def create_estudiante(new_estudiante: EstudianteCreate, session: SessionDe
 async def get_one_estudiante(
     estudiante_id: int, 
     session: SessionDep,
-    incluir_archivados: bool = False
+    incluir_archivados: bool = True
 ):
-    """Obtiene un estudiante con sus cursos matriculados."""
+    """Obtiene un estudiante con sus cursos matriculados (incluye archivados por defecto)."""
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")

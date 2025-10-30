@@ -142,10 +142,11 @@ async def listar_estudiantes(curso_id: int, session: SessionDep):
 
 @router.get("/estudiantes/{cedula}/cursos", status_code=200)
 async def listar_cursos(cedula: int, session: SessionDep):
-    """Lista todos los cursos en los que está matriculado un estudiante."""
+    """Lista todos los cursos en los que está matriculado un estudiante (incluye archivados)."""
     estudiante_db = session.get(Estudiante, cedula)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
     
     # Obtener cursos usando función auxiliar optimizada
+    # Nota: Permite ver cursos de estudiantes archivados
     return obtener_cursos_de_estudiante(session, cedula)
