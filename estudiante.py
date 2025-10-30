@@ -1,8 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException
-from models import Estudiante, EstudianteCreate, EstudianteUpdate, Matricula, Curso
+from models import Estudiante, EstudianteCreate, EstudianteUpdate
 from db import SessionDep
 from sqlmodel import select
+from utils import eliminar_matriculas_por_estudiante, obtener_cursos_de_estudiante
 
 router = APIRouter()
 
@@ -28,19 +29,11 @@ async def delete_estudiante(cedula: int, session: SessionDep):
     if not estudiante:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
     
-    # Validar si ya está archivado
     if estudiante.archivado:
         raise HTTPException(status_code=400, detail="El estudiante ya está archivado")
     
-    # Validar y eliminar matrículas asociadas
-    stmt = select(Matricula).where(Matricula.estudiante_cedula == cedula)
-    matriculas = session.exec(stmt).all()
-    
-    matriculas_eliminadas = 0
-    if len(matriculas) > 0:
-        for matricula in matriculas:
-            session.delete(matricula)
-            matriculas_eliminadas += 1
+    # Eliminar matrículas asociadas usando función auxiliar
+    matriculas_eliminadas = eliminar_matriculas_por_estudiante(session, cedula)
     
     # Archivar estudiante
     estudiante.archivado = True  
@@ -77,25 +70,15 @@ async def get_one_estudiante(
     incluir_archivados: bool = False
 ):
     """Obtiene un estudiante con sus cursos matriculados."""
-    # Buscar estudiante
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
     
-    # Validar si está archivado
     if estudiante_db.archivado and not incluir_archivados:
         raise HTTPException(status_code=404, detail="Estudiante archivado")
     
-    # Obtener matrículas del estudiante
-    stmt = select(Matricula).where(Matricula.estudiante_cedula == estudiante_id)
-    matriculas = session.exec(stmt).all()
-    
-    # Obtener cursos de cada matrícula
-    cursos = []
-    for m in matriculas:
-        c = session.get(Curso, m.curso_id)
-        if c:
-            cursos.append(c)
+    # Obtener cursos usando función auxiliar optimizada
+    cursos = obtener_cursos_de_estudiante(session, estudiante_id)
     
     # Construir respuesta con estudiante y sus cursos
     estudiante_dict = estudiante_db.model_dump()
@@ -105,12 +88,10 @@ async def get_one_estudiante(
 @router.put("/{estudiante_id}", response_model=Estudiante, status_code=200)
 async def update_estudiante(estudiante_id: int, estudiante_update: EstudianteUpdate, session: SessionDep):
     """Actualiza los datos de un estudiante."""
-    # Buscar estudiante
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
     
-    # Validar que se envió al menos un campo para actualizar
     update_data = estudiante_update.model_dump(exclude_unset=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="No se proporcionaron datos para actualizar")
@@ -119,7 +100,6 @@ async def update_estudiante(estudiante_id: int, estudiante_update: EstudianteUpd
     for key, value in update_data.items():
         setattr(estudiante_db, key, value)
 
-    # Guardar cambios
     session.add(estudiante_db)
     session.commit()
     session.refresh(estudiante_db)
