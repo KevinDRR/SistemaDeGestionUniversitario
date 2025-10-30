@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models import Estudiante, EstudianteCreate
+from models import Estudiante, EstudianteCreate, EstudianteUpdate
 from db import SessionDep
 
 router = APIRouter()
@@ -21,7 +21,7 @@ async def get_one_estudiante(estudiante_id: int, session: SessionDep):
     return estudiante_db
 
 @router.put("/{estudiante_id}", response_model=Estudiante)
-async def update_estudiante(estudiante_id: int, estudiante_update: EstudianteCreate, session: SessionDep):
+async def update_estudiante(estudiante_id: int, estudiante_update: EstudianteUpdate, session: SessionDep):
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")

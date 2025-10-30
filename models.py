@@ -1,13 +1,13 @@
 import datetime
 from sqlmodel import SQLModel, Field
 
-class CursoBase(SQLModel, table=True):
+class CursoBase(SQLModel):
     id: int | None = Field(default=None, primary_key=True)
     nombre: str | None = Field(description= "nombre del curso")
     Creditos: int | None = Field(description= "creditos del curso")
     Horario: datetime.date | None = Field(description= "horario del curso")
 
-class EstudianteBase(SQLModel, table=True):
+class EstudianteBase(SQLModel):
     cedula: int | None = Field(default=None, primary_key=True)
     nombre: str | None = Field(description= "nombre del estudiante")
     email: str | None = Field(description= "email del estudiante")
@@ -33,8 +33,13 @@ class CursoCreate(CursoBase):
 class EstudianteCreate(EstudianteBase):
     pass
 
-class CursoUpdate(CursoBase):
-    pass
+class CursoUpdate(SQLModel):
+    nombre: str | None = None
+    Creditos: int | None = None
+    Horario: datetime.date | None = None
 
-class EstudianteUpdate(EstudianteBase):
-    pass
+class EstudianteUpdate(SQLModel):
+    nombre: str | None = None
+    email: str | None = None
+    semestre: int | None = None
+

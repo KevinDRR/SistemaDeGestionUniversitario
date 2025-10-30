@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models import Curso, CursoCreate, Estudiante, EstudianteCreate, Matricula
+from models import Curso, CursoCreate, CursoUpdate, Estudiante, EstudianteCreate, Matricula
 from db import SessionDep
 from sqlmodel import select
 
@@ -22,7 +22,7 @@ async def get_one_curso(curso_id: int, session: SessionDep):
     return curso_db
 
 @router.put("/{curso_id}", response_model=Curso)
-async def update_curso(curso_id: int, curso_update: CursoCreate, session: SessionDep):
+async def update_curso(curso_id: int, curso_update: CursoUpdate, session: SessionDep):
     curso_db = session.get(Curso, curso_id)
     if not curso_db:
         raise HTTPException(status_code=404, detail="Curso no encontrado")
