@@ -15,10 +15,16 @@ class EstudianteBase(SQLModel, table=True):
 
 
 class Estudiante(EstudianteBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    cedula: int | None = Field(default=None, primary_key=True)
 
 class Curso(CursoBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
+ 
+
+class Matricula(SQLModel, table=True):
+    curso_id: int | None = Field(default=None, foreign_key="curso.id", primary_key=True)
+    estudiante_cedula: int | None = Field(default=None, foreign_key="estudiante.cedula", primary_key=True)
+    fecha: datetime.date | None = Field(default_factory=datetime.date.today)
 
 
 class CursoCreate(CursoBase):
