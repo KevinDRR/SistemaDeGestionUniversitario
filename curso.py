@@ -6,7 +6,7 @@ from sqlmodel import select
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Curso])
+@router.get("/", response_model=List[Curso], status_code=200)
 async def get_all_cursos(session: SessionDep, creditos: Optional[int] = None, codigo: Optional[int] = None):
     stmt = select(Curso)
     if creditos is not None:
@@ -16,7 +16,7 @@ async def get_all_cursos(session: SessionDep, creditos: Optional[int] = None, co
     cursos = session.exec(stmt).all()
     return cursos
 
-@router.delete("/{curso_id}")
+@router.delete("/{curso_id}", status_code=200)
 async def delete_curso(curso_id: int, session: SessionDep):
     curso = session.get(Curso, curso_id)
     if not curso:
@@ -41,7 +41,7 @@ async def delete_curso(curso_id: int, session: SessionDep):
         "matriculas_eliminadas": matriculas_eliminadas
     }
 
-@router.post("/", response_model=Curso)
+@router.post("/", response_model=Curso, status_code=201)
 async def create_curso(new_curso: CursoCreate, session: SessionDep):
     curso_data = new_curso.model_dump()
     curso = Curso.model_validate(curso_data)
@@ -50,7 +50,7 @@ async def create_curso(new_curso: CursoCreate, session: SessionDep):
     session.refresh(curso)
     return curso
 
-@router.get("/{curso_id}")
+@router.get("/{curso_id}", status_code=200)
 async def get_one_curso(curso_id: int, session: SessionDep):
     curso_db = session.get(Curso, curso_id)
     if not curso_db:
@@ -66,13 +66,17 @@ async def get_one_curso(curso_id: int, session: SessionDep):
     curso_dict["estudiantes"] = [e.model_dump() for e in estudiantes]
     return curso_dict
 
-@router.put("/{curso_id}", response_model=Curso)
+@router.put("/{curso_id}", response_model=Curso, status_code=200)
 async def update_curso(curso_id: int, curso_update: CursoUpdate, session: SessionDep):
     curso_db = session.get(Curso, curso_id)
     if not curso_db:
         raise HTTPException(status_code=404, detail="Curso no encontrado")
 
+    # Validar que se envió al menos un campo para actualizar
     update_data = curso_update.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No se proporcionaron datos para actualizar")
+
     for key, value in update_data.items():
         setattr(curso_db, key, value)
 
@@ -97,7 +101,7 @@ async def matricular(curso_id: int, cedula: int, session: SessionDep):
     )
     existing = session.exec(stmt).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Estudiante ya matriculado en el curso")
+        raise HTTPException(status_code=409, detail="Estudiante ya matriculado en el curso")
 
     link = Matricula(curso_id=curso_id, estudiante_cedula=cedula)
     session.add(link)
@@ -105,7 +109,7 @@ async def matricular(curso_id: int, cedula: int, session: SessionDep):
     return {"message": "matriculado", "curso_id": curso_id, "cedula": cedula}
 
 
-@router.delete("/{curso_id}/estudiantes/{cedula}")
+@router.delete("/{curso_id}/estudiantes/{cedula}", status_code=200)
 async def desmatricular(curso_id: int, cedula: int, session: SessionDep):
     stmt = select(Matricula).where(
         Matricula.curso_id == curso_id,
@@ -119,7 +123,7 @@ async def desmatricular(curso_id: int, cedula: int, session: SessionDep):
     return {"message": "desmatriculado", "curso_id": curso_id, "cedula": cedula}
 
 
-@router.get("/{curso_id}/estudiantes")
+@router.get("/{curso_id}/estudiantes", status_code=200)
 async def listar_estudiantes(curso_id: int, session: SessionDep):
     curso_db = session.get(Curso, curso_id)
     if not curso_db:
@@ -134,7 +138,7 @@ async def listar_estudiantes(curso_id: int, session: SessionDep):
     return estudiantes
 
 
-@router.get("/estudiantes/{cedula}/cursos")
+@router.get("/estudiantes/{cedula}/cursos", status_code=200)
 async def listar_cursos(cedula: int, session: SessionDep):
     estudiante_db = session.get(Estudiante, cedula)
     if not estudiante_db:

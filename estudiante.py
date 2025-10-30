@@ -6,7 +6,7 @@ from sqlmodel import select
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Estudiante])
+@router.get("/", response_model=List[Estudiante], status_code=200)
 async def get_all_estudiantes(
     session: SessionDep, 
     semestre: Optional[int] = None,
@@ -20,11 +20,15 @@ async def get_all_estudiantes(
     estudiantes = session.exec(stmt).all()
     return estudiantes
 
-@router.delete("/{cedula}")
+@router.delete("/{cedula}", status_code=200)
 async def delete_estudiante(cedula: int, session: SessionDep):
     estudiante = session.get(Estudiante, cedula)
     if not estudiante:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+    
+    # Validar si ya está archivado
+    if estudiante.archivado:
+        raise HTTPException(status_code=400, detail="El estudiante ya está archivado")
     
     # Validar y eliminar matrículas asociadas
     stmt = select(Matricula).where(Matricula.estudiante_cedula == cedula)
@@ -46,8 +50,13 @@ async def delete_estudiante(cedula: int, session: SessionDep):
         "matriculas_eliminadas": matriculas_eliminadas
     }
 
-@router.post("/", response_model=Estudiante)
+@router.post("/", response_model=Estudiante, status_code=201)
 async def create_estudiante(new_estudiante: EstudianteCreate, session: SessionDep):
+    # Validar si ya existe un estudiante con esa cédula
+    estudiante_existente = session.get(Estudiante, new_estudiante.cedula)
+    if estudiante_existente:
+        raise HTTPException(status_code=409, detail="Ya existe un estudiante con esa cédula")
+    
     estudiante_data = new_estudiante.model_dump()
     estudiante = Estudiante.model_validate(estudiante_data)
     session.add(estudiante)
@@ -55,7 +64,7 @@ async def create_estudiante(new_estudiante: EstudianteCreate, session: SessionDe
     session.refresh(estudiante)
     return estudiante
 
-@router.get("/{estudiante_id}")
+@router.get("/{estudiante_id}", status_code=200)
 async def get_one_estudiante(
     estudiante_id: int, 
     session: SessionDep,
@@ -77,13 +86,17 @@ async def get_one_estudiante(
     estudiante_dict["cursos"] = [c.model_dump() for c in cursos]
     return estudiante_dict
 
-@router.put("/{estudiante_id}", response_model=Estudiante)
+@router.put("/{estudiante_id}", response_model=Estudiante, status_code=200)
 async def update_estudiante(estudiante_id: int, estudiante_update: EstudianteUpdate, session: SessionDep):
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
-
+    
+    # Validar que se envió al menos un campo para actualizar
     update_data = estudiante_update.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No se proporcionaron datos para actualizar")
+
     for key, value in update_data.items():
         setattr(estudiante_db, key, value)
 
