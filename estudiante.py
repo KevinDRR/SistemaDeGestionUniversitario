@@ -12,6 +12,7 @@ async def get_all_estudiantes(
     semestre: Optional[int] = None,
     incluir_archivados: bool = False
 ):
+    """Obtiene la lista de todos los estudiantes."""
     stmt = select(Estudiante)
     if semestre is not None:
         stmt = stmt.where(Estudiante.semestre == semestre)
@@ -22,6 +23,7 @@ async def get_all_estudiantes(
 
 @router.delete("/{cedula}", status_code=200)
 async def delete_estudiante(cedula: int, session: SessionDep):
+    """Archiva un estudiante y elimina sus matrículas."""
     estudiante = session.get(Estudiante, cedula)
     if not estudiante:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
@@ -52,13 +54,17 @@ async def delete_estudiante(cedula: int, session: SessionDep):
 
 @router.post("/", response_model=Estudiante, status_code=201)
 async def create_estudiante(new_estudiante: EstudianteCreate, session: SessionDep):
+    """Crea un nuevo estudiante."""
     # Validar si ya existe un estudiante con esa cédula
     estudiante_existente = session.get(Estudiante, new_estudiante.cedula)
     if estudiante_existente:
         raise HTTPException(status_code=409, detail="Ya existe un estudiante con esa cédula")
     
+    # Convertir datos y crear estudiante
     estudiante_data = new_estudiante.model_dump()
     estudiante = Estudiante.model_validate(estudiante_data)
+    
+    # Guardar en base de datos
     session.add(estudiante)
     session.commit()
     session.refresh(estudiante)
@@ -70,24 +76,36 @@ async def get_one_estudiante(
     session: SessionDep,
     incluir_archivados: bool = False
 ):
+    """Obtiene un estudiante con sus cursos matriculados."""
+    # Buscar estudiante
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+    
+    # Validar si está archivado
     if estudiante_db.archivado and not incluir_archivados:
         raise HTTPException(status_code=404, detail="Estudiante archivado")
+    
+    # Obtener matrículas del estudiante
     stmt = select(Matricula).where(Matricula.estudiante_cedula == estudiante_id)
     matriculas = session.exec(stmt).all()
+    
+    # Obtener cursos de cada matrícula
     cursos = []
     for m in matriculas:
         c = session.get(Curso, m.curso_id)
         if c:
             cursos.append(c)
+    
+    # Construir respuesta con estudiante y sus cursos
     estudiante_dict = estudiante_db.model_dump()
     estudiante_dict["cursos"] = [c.model_dump() for c in cursos]
     return estudiante_dict
 
 @router.put("/{estudiante_id}", response_model=Estudiante, status_code=200)
 async def update_estudiante(estudiante_id: int, estudiante_update: EstudianteUpdate, session: SessionDep):
+    """Actualiza los datos de un estudiante."""
+    # Buscar estudiante
     estudiante_db = session.get(Estudiante, estudiante_id)
     if not estudiante_db:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
@@ -97,9 +115,11 @@ async def update_estudiante(estudiante_id: int, estudiante_update: EstudianteUpd
     if not update_data:
         raise HTTPException(status_code=400, detail="No se proporcionaron datos para actualizar")
 
+    # Actualizar campos
     for key, value in update_data.items():
         setattr(estudiante_db, key, value)
 
+    # Guardar cambios
     session.add(estudiante_db)
     session.commit()
     session.refresh(estudiante_db)
