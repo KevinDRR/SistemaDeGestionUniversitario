@@ -25,10 +25,26 @@ async def delete_estudiante(cedula: int, session: SessionDep):
     estudiante = session.get(Estudiante, cedula)
     if not estudiante:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+    
+    # Validar y eliminar matrículas asociadas
+    stmt = select(Matricula).where(Matricula.estudiante_cedula == cedula)
+    matriculas = session.exec(stmt).all()
+    
+    matriculas_eliminadas = 0
+    if len(matriculas) > 0:
+        for matricula in matriculas:
+            session.delete(matricula)
+            matriculas_eliminadas += 1
+    
+    # Archivar estudiante
     estudiante.archivado = True  
     session.add(estudiante)
     session.commit()
-    return {"message": "Estudiante archivado"}
+    
+    return {
+        "message": "Estudiante archivado",
+        "matriculas_eliminadas": matriculas_eliminadas
+    }
 
 @router.post("/", response_model=Estudiante)
 async def create_estudiante(new_estudiante: EstudianteCreate, session: SessionDep):

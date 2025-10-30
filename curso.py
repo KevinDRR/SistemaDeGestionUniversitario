@@ -21,9 +21,25 @@ async def delete_curso(curso_id: int, session: SessionDep):
     curso = session.get(Curso, curso_id)
     if not curso:
         raise HTTPException(status_code=404, detail="Curso no encontrado")
+    
+    # Validar y eliminar matrículas asociadas
+    stmt = select(Matricula).where(Matricula.curso_id == curso_id)
+    matriculas = session.exec(stmt).all()
+    
+    matriculas_eliminadas = 0
+    if len(matriculas) > 0:
+        for matricula in matriculas:
+            session.delete(matricula)
+            matriculas_eliminadas += 1
+    
+    # Eliminar curso
     session.delete(curso)
     session.commit()
-    return {"message": "Curso eliminado"}
+    
+    return {
+        "message": "Curso eliminado",
+        "matriculas_eliminadas": matriculas_eliminadas
+    }
 
 @router.post("/", response_model=Curso)
 async def create_curso(new_curso: CursoCreate, session: SessionDep):
